@@ -1,0 +1,29 @@
+# ─── Python ───
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# ─── Dataset images (large, not needed at runtime) ───
+Dataset/images/
+
+# ─── Frontend (deployed separately) ───
+frontend/
+
+# ─── Git & IDE ───
+.git/
+.gitignore
+.vscode/
+
+# ─── Documentation & Assets ───
+*.pdf
+*.md
+Assets/
+
+# ─── Environment secrets (injected at runtime) ───
+.env
+
+# ─── Docker itself ───
+Dockerfile
+.dockerignore
+docker-compose*.yml

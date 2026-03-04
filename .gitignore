@@ -1,0 +1,13 @@
+# ─── Runtime environments (generated, not project code) ───
+.venv/
+__pycache__/
+*.pyc
+frontend/node_modules/
+frontend/dist/
+
+# ─── Environment secrets ───
+.env
+frontend/.env
+
+# ─── Dataset images (stored as images.zip via Git LFS) ───
+Dataset/images/
