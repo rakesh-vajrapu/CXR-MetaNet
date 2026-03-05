@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Allows you to run it manually
+  workflow_dispatch:
 
 env:
-  REGISTRY_LOGIN_SERVER: cxrmetanetregistry.azurecr.io
-  IMAGE_NAME: cxrmetanetregistry.azurecr.io/cxr-metanet-api:latest
+  REGISTRY_LOGIN_SERVER: cxrmetanet.azurecr.io
+  IMAGE_NAME: cxrmetanet.azurecr.io/cxr-metanet-api:latest
 
 jobs:
   build-and-deploy:
