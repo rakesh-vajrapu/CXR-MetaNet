@@ -511,6 +511,7 @@ export default function App() {
 
   // Load available TTS voices
   useEffect(() => {
+    if (!window.speechSynthesis) return;
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
@@ -886,6 +887,7 @@ export default function App() {
 
   // Text to Speech (AI Voice)
   const handleSpeak = (text, idx) => {
+    if (!window.speechSynthesis) return;
     if (speakingIdx === idx) {
       window.speechSynthesis.cancel();
       setSpeakingIdx(null);
@@ -908,6 +910,7 @@ export default function App() {
   // Report TTS
   const [speakingReport, setSpeakingReport] = useState(null);
   const handleSpeakReport = (text, id) => {
+    if (!window.speechSynthesis) return;
     if (speakingReport === id) {
       window.speechSynthesis.cancel();
       setSpeakingReport(null);
@@ -934,7 +937,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    return () => window.speechSynthesis.cancel();
+    return () => window.speechSynthesis?.cancel();
   }, []);
 
   const handleDownloadPDF = async (reportType) => {
