@@ -434,6 +434,7 @@ export default function App() {
 
   // Guided Tour State
   const [showTour, setShowTour] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const handleTourNext = useCallback(() => setTourStep(s => Math.min(s + 1, TOUR_STEPS.length - 1)), []);
@@ -1231,11 +1232,65 @@ export default function App() {
             </div>
           </div>
 
+          {/* ═══ Mobile Hamburger Menu (visible below sm) ═══ */}
+          <div className="relative sm:hidden z-20">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setMobileMenuOpen(p => !p)}
+              className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-300 cursor-pointer
+                ${theme === 'dark'
+                  ? 'bg-white/5 border-white/15 text-white/80 hover:border-[#00D4FF]/50'
+                  : 'bg-white border-indigo-200 text-indigo-600 hover:border-indigo-400 shadow-sm'}`}
+              aria-label="Menu"
+            >
+              <span className="text-lg">{mobileMenuOpen ? '✕' : '☰'}</span>
+            </motion.button>
+
+            {/* Dropdown panel */}
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className={`absolute right-0 top-12 w-48 rounded-2xl border p-2 flex flex-col gap-1.5 shadow-xl
+                    ${theme === 'dark'
+                      ? 'bg-[#0d1520]/95 backdrop-blur-xl border-white/10'
+                      : 'bg-white/95 backdrop-blur-xl border-indigo-100'}`}
+                >
+                  <button
+                    onClick={() => { setShowTour(true); setTourStep(0); setMobileMenuOpen(false); }}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all
+                      ${theme === 'dark' ? 'text-[#00D4FF] hover:bg-[#00D4FF]/10' : 'text-indigo-600 hover:bg-indigo-50'}`}
+                  >
+                    <span>📖</span> Take a Tour?
+                  </button>
+                  <button
+                    onClick={() => { document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all
+                      ${theme === 'dark' ? 'text-[#8B5CF6] hover:bg-[#8B5CF6]/10' : 'text-violet-600 hover:bg-violet-50'}`}
+                  >
+                    <span>❓</span> FAQ
+                  </button>
+                  <button
+                    onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark'); setMobileMenuOpen(false); }}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all
+                      ${theme === 'dark' ? 'text-white/80 hover:bg-white/5' : 'text-[#1E2340] hover:bg-indigo-50'}`}
+                  >
+                    <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ═══ Desktop Buttons (hidden below sm, visible sm+) ═══ */}
           {/* Take a Tour Button */}
           <motion.button
             whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.95 }}
             onClick={() => { setShowTour(true); setTourStep(0); }}
-            className={`relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-[10px] border transition-all duration-300 cursor-pointer overflow-hidden uppercase tracking-widest
+            className={`hidden sm:flex relative z-10 items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-[10px] border transition-all duration-300 cursor-pointer overflow-hidden uppercase tracking-widest
               ${theme === 'dark'
                 ? 'bg-gradient-to-r from-[#00D4FF]/10 to-[#8B5CF6]/10 border-[#00D4FF]/30 text-[#00D4FF] hover:border-[#00D4FF]/60 hover:shadow-[0_0_20px_rgba(0,212,255,0.25)]'
                 : 'bg-gradient-to-r from-blue-50 to-violet-50 border-indigo-200 text-indigo-600 hover:border-indigo-400 hover:shadow-lg'}`}
@@ -1249,7 +1304,7 @@ export default function App() {
           <motion.button
             whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.95 }}
             onClick={() => document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' })}
-            className={`relative z-10 flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-[10px] border transition-all duration-300 cursor-pointer overflow-hidden uppercase tracking-widest
+            className={`hidden sm:flex relative z-10 items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-[10px] border transition-all duration-300 cursor-pointer overflow-hidden uppercase tracking-widest
               ${theme === 'dark'
                 ? 'bg-gradient-to-r from-[#8B5CF6]/10 to-[#FF0080]/10 border-[#8B5CF6]/30 text-[#8B5CF6] hover:border-[#8B5CF6]/60 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)]'
                 : 'bg-gradient-to-r from-violet-50 to-pink-50 border-violet-200 text-violet-600 hover:border-violet-400 hover:shadow-lg'}`}
@@ -1263,7 +1318,7 @@ export default function App() {
             whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.95 }}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             data-tour="theme-toggle"
-            className={`relative z-10 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-bold text-[10px] border transition-all duration-300 cursor-pointer overflow-hidden uppercase tracking-widest
+            className={`hidden sm:flex relative z-10 items-center gap-2.5 px-4 py-2.5 rounded-2xl font-bold text-[10px] border transition-all duration-300 cursor-pointer overflow-hidden uppercase tracking-widest
               ${theme === 'dark'
                 ? 'bg-white/5 border-white/10 text-white/90 hover:border-[#00D4FF]/50 hover:shadow-[0_0_20px_rgba(0,212,255,0.25)]'
                 : 'bg-white border-indigo-200 text-[#1E2340] hover:border-indigo-400 hover:bg-indigo-50/50 hover:shadow-lg'}`}
