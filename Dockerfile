@@ -23,6 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY api.py .
 COPY Models/ ./Models/
 COPY Dataset/data.csv ./Dataset/data.csv
+COPY Dataset/images/ ./Dataset/images/
 
 # ── Expose API port ──
 EXPOSE 8000
