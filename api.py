@@ -65,19 +65,22 @@ app.add_middleware(
     expose_headers=["X-Filename"],
 )
 
-# ─── DYNAMIC CPU OPTIMIZATION ───
+# ─── SMART CPU OPTIMIZATION ───
 device = torch.device("cpu")
 cpu_count = os.cpu_count() or multiprocessing.cpu_count()
 
-# Dynamically allocate 90% of available CPU cores to PyTorch inference
-threads = max(1, int(cpu_count * 0.9))
+# Azure App Service sets WEBSITE_SITE_NAME automatically
+is_azure = bool(os.getenv("WEBSITE_SITE_NAME"))
+cpu_ratio = 0.90 if is_azure else 0.75
+threads = max(1, int(cpu_count * cpu_ratio))
 torch.set_num_threads(threads)
 
 # Only allow single-threaded interoperability to strictly prevent background thread spawning
 torch.set_num_interop_threads(1)
 
-print(f"[INFO] Running in PURE-CPU MODE (Dynamic 90% allocation).")
-print(f"[INFO] Host cores={cpu_count} | PyTorch threads={threads} (90%).")
+env_label = "AZURE" if is_azure else "LOCAL"
+print(f"[INFO] Running in PURE-CPU MODE ({env_label} — {int(cpu_ratio*100)}% allocation).")
+print(f"[INFO] Host cores={cpu_count} | PyTorch threads={threads}.")
 
 # Class order matches the actual training label encoding (verified from TTA n-counts):
 # TTA label=0 n=1200 -> Normal       (6000 total * 0.20 = 1200)
