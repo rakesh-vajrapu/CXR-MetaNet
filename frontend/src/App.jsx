@@ -1869,7 +1869,16 @@ export default function App() {
                     const accGlow = isNormal ? 'rgba(16,185,129,0.25)' : isPleural ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.25)';
                     const gradFrom = isNormal ? '#10B981' : isPleural ? '#F59E0B' : '#EF4444';
                     const gradTo = isNormal ? '#059669' : isPleural ? '#D97706' : '#DC2626';
-                    const icon = isNormal ? '🫁' : isPleural ? '💧' : '🦠';
+                    // Real SVG for Lungs since Unicode 🫁 (Unicode 13.0) renders as a missing box on many Windows machines
+                    const lungSvg = (
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                        <path d="M12 22S7.5 19.5 7.5 13.5V6L12 3l4.5 3v7.5C16.5 19.5 12 22 12 22z" />
+                        <path d="M12 3v19" strokeDasharray="2 2" />
+                        <path d="M7.5 10h9" opacity="0.4" />
+                        <path d="M7.5 14h9" opacity="0.4" />
+                      </svg>
+                    );
+                    const icon = isNormal ? lungSvg : isPleural ? '💧' : '🦠';
                     const pct = Math.round(results.confidence_score * 100);
                     // SVG ring params
                     const r = 44, circ = 2 * Math.PI * r;
