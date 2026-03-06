@@ -344,18 +344,28 @@ npm run dev
 ### 7. Open in Browser
 Navigate to **http://localhost:5173** — the CDSS UI will appear. Wait for the model loading banner to disappear before uploading X-rays.
 
-### Docker Deployment (Backend Only)
-```bash
-# Build the container
-docker build -t cdss-backend .
+### Docker Deployment (Azure App Service)
+We use the Azure CLI to build and push the container directly to Azure Container Registry (ACR), injecting the massive dataset images into the Docker image locally to bypass Git LFS limits:
 
-# Run with environment variables
-docker run -p 8000:8000 \
-  -e FOUNDRY_API_KEY=your_key \
-  -e FOUNDRY_ENDPOINT=your_endpoint \
-  -e ALLOWED_ORIGINS=https://your-frontend.vercel.app \
-  cdss-backend
+```bash
+# Build the Docker image locally and push directly to Azure Container Registry
+az acr build --registry CXRMetaNet --image cxr-metanet-api:latest .
 ```
+> **Note on "Always On"**: For zero-wait inference, ensure "Always On" is enabled under *Configuration > General settings* in your Azure App Service. Otherwise, the container scales down after 20 minutes of inactivity, causing a 30-second "Cold Start" model loading delay for the next user.
+
+---
+
+## 🛠️ Performance & Scalability Features
+
+### 1. Smart CPU Thread Allocation
+To maximize inference speed without crashing the host OS or freezing the browser via CSS animation starvation, the backend dynamically sizes PyTorch threads based on its environment:
+- **Production (Azure App Service)**: Detects the `WEBSITE_SITE_NAME` environment variable and allocates **90% of available CPU cores** (e.g., 3 threads on a 4-core machine) to maximize inference throughput.
+- **Local Dev (VM / Laptop)**: Allocates **75% of available CPU cores** to leave generous headroom for the developer's Web Browser, IDE, and OS.
+
+### 2. Strict AI Medical Scope Restriction
+The CDSS Assistant relies on Azure OpenAI's GPT-4o-mini but features a hardcoded **Scope Restriction Guardrail**:
+- The AI is instructed to *strictly* refuse answering questions unrelated to chest X-rays, clinical diagnoses, respiratory conditions, or the CDSS application itself.
+- Off-topic queries (e.g., about general tech companies, politics, or coding) trigger a polite, guiding refusal, ensuring the assistant remains a dedicated clinical tool.
 
 ---
 
