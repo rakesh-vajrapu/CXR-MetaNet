@@ -65,20 +65,19 @@ app.add_middleware(
     expose_headers=["X-Filename"],
 )
 
-# ─── PURE CPU OPTIMIZATION ───
+# ─── DYNAMIC CPU OPTIMIZATION ───
 device = torch.device("cpu")
-cpu_count = multiprocessing.cpu_count()
+cpu_count = os.cpu_count() or multiprocessing.cpu_count()
 
-# Artificially throttle PyTorch to leave 2 physical cores completely free for the OS and Browser.
-# This prevents the UI CSS animations from starving and freezing during heavy inference.
-locked_cores = max(1, cpu_count - 2)
-torch.set_num_threads(locked_cores)
+# Dynamically allocate 90% of available CPU cores to PyTorch inference
+threads = max(1, int(cpu_count * 0.9))
+torch.set_num_threads(threads)
 
 # Only allow single-threaded interoperability to strictly prevent background thread spawning
 torch.set_num_interop_threads(1)
 
-print(f"[INFO] Running in STRICT PURE-CPU MODE (Throttled for UI smoothness).")
-print(f"[INFO] Host cores={cpu_count} | PyTorch locked to {locked_cores} cores.")
+print(f"[INFO] Running in PURE-CPU MODE (Dynamic 90% allocation).")
+print(f"[INFO] Host cores={cpu_count} | PyTorch threads={threads} (90%).")
 
 # Class order matches the actual training label encoding (verified from TTA n-counts):
 # TTA label=0 n=1200 -> Normal       (6000 total * 0.20 = 1200)
