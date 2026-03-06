@@ -219,7 +219,38 @@ def validate_radiograph_modality(image_bytes):
             detail="This does not appear to be a valid chest X-ray. The image structure is inconsistent with medical radiographs.",
         )
 
-    print(f"[VALIDATION] PASSED — color_diff={color_diff_mean:.1f}, sat_ratio={high_sat_ratio:.3f}, contrast={intensity_std:.1f}, edge_density={edge_density:.3f}")
+    # ── GATE 5: Text / document detection (edge orientation analysis) ──
+    # Text images have dominant horizontal/vertical edges; X-rays have organic curved edges
+    sobel_x = ndimage.sobel(gray_small, axis=1)
+    sobel_y = ndimage.sobel(gray_small, axis=0)
+    abs_x = np.abs(sobel_x)
+    abs_y = np.abs(sobel_y)
+    strong_mask = (abs_x + abs_y) > 15  # only look at meaningful edges
+    if np.sum(strong_mask) > 100:  # need enough edge pixels to analyze
+        hv_dominant = np.sum((abs_x[strong_mask] > 3 * abs_y[strong_mask]) |
+                             (abs_y[strong_mask] > 3 * abs_x[strong_mask]))
+        hv_ratio = hv_dominant / np.sum(strong_mask)
+        if hv_ratio > 0.75:
+            raise HTTPException(
+                status_code=400,
+                detail="This does not appear to be a valid chest X-ray. The image looks like a text document or screenshot. Please upload an actual chest radiograph.",
+            )
+    else:
+        hv_ratio = 0.0
+
+    # ── GATE 6: Intensity histogram spread ──
+    # X-rays have a wide spread of pixel intensities (bone, air, tissue);
+    # text/documents are mostly one color (white) with small dark regions (text)
+    hist, _ = np.histogram(gray_small.ravel(), bins=32, range=(0, 255))
+    hist_norm = hist / hist.sum()
+    top2_bins = np.sort(hist_norm)[-2:].sum()
+    if top2_bins > 0.70:
+        raise HTTPException(
+            status_code=400,
+            detail="This does not appear to be a valid chest X-ray. The image has an intensity distribution inconsistent with medical radiographs.",
+        )
+
+    print(f"[VALIDATION] PASSED — color_diff={color_diff_mean:.1f}, sat_ratio={high_sat_ratio:.3f}, contrast={intensity_std:.1f}, edge_density={edge_density:.3f}, hv_ratio={hv_ratio:.3f}, top2_hist={top2_bins:.3f}")
     return img_rgb
 
 
