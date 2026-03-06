@@ -12,3 +12,6 @@ frontend/.env
 # ─── Dataset images (too large for Git, built locally into Docker) ───
 Dataset/images/
 Dataset/images.zip
+
+# ─── IDE configurations ───
+.vscode/
