@@ -348,6 +348,7 @@ async def predict(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Image parsing failed: {str(e)}")
 
+    t0 = time.time()
     input_tensor, img_resized = preprocess_image(img_rgb)
 
     # Run models sequentially. Parallel `ThreadPoolExecutor` combined with PyTorch's internal OpenMP threading
@@ -386,6 +387,9 @@ async def predict(file: UploadFile = File(...)):
         heatmap_base64 = None
         print(f"Heatmap generation failed: {e}")
 
+    t1 = time.time()
+    inference_time_seconds = round(t1 - t0, 2)
+
     # Lookup Ground Truth
     ground_truth = "Unknown"
     is_correct = None
@@ -411,6 +415,7 @@ async def predict(file: UploadFile = File(...)):
         "heatmap_base64": heatmap_base64,
         "ground_truth": ground_truth,
         "is_correct": is_correct,
+        "inference_time_seconds": inference_time_seconds,
     }
 
 

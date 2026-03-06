@@ -1861,6 +1861,18 @@ export default function App() {
                   className="w-full space-y-6"
                   data-tour="diagnosis-result"
                 >
+                  {/* Inference Time Log */}
+                  {results.inference_time_seconds && (
+                    <div className="flex justify-end w-full">
+                      <div className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide flex items-center gap-2 
+                        ${theme === 'dark' ? 'bg-[#0d1117] text-gray-400 border border-white/10' : 'bg-white text-gray-500 border border-gray-200 shadow-sm'}`}
+                      >
+                        <span className="text-sm">⏱️</span>
+                        <span>Predicted in {results.inference_time_seconds < 60 ? `${Math.round(results.inference_time_seconds)}s` : `${Math.floor(results.inference_time_seconds / 60)}m ${Math.round(results.inference_time_seconds % 60)}s`}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Premium Diagnosis Banner */}
                   {(() => {
                     const isNormal = results.prediction.toLowerCase() === 'normal';
