@@ -1102,14 +1102,21 @@ input[type=file] {
 .tour-tooltip {
   position: fixed;
   z-index: 10000;
-  width: 380px;
-  max-width: 90vw;
+  width: min(380px, calc(100vw - 32px));
   border-radius: 20px;
   padding: 0;
   overflow: visible;
   animation: tour-tooltip-in 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
   pointer-events: auto;
   will-change: opacity, transform;
+}
+
+@media (max-width: 639px) {
+  .tour-tooltip {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+  }
 }
 
 /* Re-trigger entrance animation on step change */
