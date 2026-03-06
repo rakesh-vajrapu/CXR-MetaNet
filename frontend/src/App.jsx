@@ -1869,7 +1869,7 @@ export default function App() {
                     const accGlow = isNormal ? 'rgba(16,185,129,0.25)' : isPleural ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.25)';
                     const gradFrom = isNormal ? '#10B981' : isPleural ? '#F59E0B' : '#EF4444';
                     const gradTo = isNormal ? '#059669' : isPleural ? '#D97706' : '#DC2626';
-                    const icon = isNormal ? '✅' : isPleural ? '💧' : '🦠';
+                    const icon = isNormal ? '🫁' : isPleural ? '💧' : '🦠';
                     const pct = Math.round(results.confidence_score * 100);
                     // SVG ring params
                     const r = 44, circ = 2 * Math.PI * r;
