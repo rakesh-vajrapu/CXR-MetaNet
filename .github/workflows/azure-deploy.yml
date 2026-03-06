@@ -15,6 +15,7 @@ on:
 env:
   REGISTRY_LOGIN_SERVER: cxrmetanet.azurecr.io
   IMAGE_NAME: cxrmetanet.azurecr.io/cxr-metanet-api:latest
+  BLOB_BASE_URL: https://cxrmetanetdataset.blob.core.windows.net/datasets
 
 jobs:
   build-and-push:
@@ -24,13 +25,33 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          lfs: true # Needed for PyTorch model weights (*.pth, *.pkl)
+          lfs: false   # Models are now on Azure Blob Storage, not Git LFS
+
+      - name: Download Models from Azure Blob Storage
+        run: |
+          echo "Downloading model weights from Azure Blob Storage..."
+          mkdir -p Models/densenet121 Models/convnext_v2_base Models/maxvit_base
+
+          curl -o Models/densenet121/best_tta.pth         -L "${{ env.BLOB_BASE_URL }}/models/densenet121.pth"
+          echo "✓ DenseNet-121 downloaded"
+
+          curl -o Models/convnext_v2_base/best_tta.pth    -L "${{ env.BLOB_BASE_URL }}/models/convnextv2_base.pth"
+          echo "✓ ConvNeXtV2-Base downloaded"
+
+          curl -o Models/maxvit_base/best_tta.pth         -L "${{ env.BLOB_BASE_URL }}/models/maxvit_base.pth"
+          echo "✓ MaxViT-Base downloaded"
+
+          curl -o Models/meta_learner_logistic.pkl         -L "${{ env.BLOB_BASE_URL }}/models/meta_learner.pkl"
+          echo "✓ Meta-Learner downloaded"
+
+          echo "Verifying downloads..."
+          ls -lh Models/densenet121/ Models/convnext_v2_base/ Models/maxvit_base/ Models/meta_learner_logistic.pkl
 
       - name: Download Dataset from Azure Blob Storage
         run: |
           echo "Downloading images.zip from Azure Blob..."
           mkdir -p Dataset
-          curl -o Dataset/images.zip -L "https://cxrmetanetdataset.blob.core.windows.net/datasets/images.zip"
+          curl -o Dataset/images.zip -L "${{ env.BLOB_BASE_URL }}/images.zip"
           
           echo "Extracting dataset..."
           python setup_dataset.py
