@@ -102,13 +102,12 @@ def load_pytorch_model(model_name, checkpoint_path, num_classes=3):
     return model
 
 
-@contextlib.asynccontextmanager
-async def lifespan(app: FastAPI):
+def load_models_background():
+    """Load all models in a background thread so the HTTP server starts immediately."""
     global densenet_model, convnext_model, maxvit_model, meta_learner, models_ready, startup_time
-    import time
 
     t0 = time.time()
-    print("[STARTUP] Loading all models fresh...")
+    print("[STARTUP] Loading all models in background thread...")
     models_ready = False
 
     densenet_model = load_pytorch_model(
@@ -134,6 +133,16 @@ async def lifespan(app: FastAPI):
     startup_time = round(time.time() - t0, 1)
     models_ready = True
     print(f"[STARTUP] All models ready in {startup_time}s")
+
+
+@contextlib.asynccontextmanager
+async def lifespan(app: FastAPI):
+    global models_ready
+    # Spawn model loading in a background thread so Uvicorn opens the HTTP port
+    # immediately — this lets Azure's warmup probe get an HTTP 200 from /health
+    import threading
+    thread = threading.Thread(target=load_models_background, daemon=True)
+    thread.start()
     yield
     models_ready = False
     print("[SHUTDOWN] Models unloaded.")

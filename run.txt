@@ -1,0 +1,48 @@
+═══════════════════════════════════════════════════════════════
+  CXR-MetaNet CDSS — How to Run the Project
+═══════════════════════════════════════════════════════════════
+
+You need TWO terminals open side by side.
+
+───────────────────────────────────────────────────────────────
+  TERMINAL 1 — Backend (FastAPI + PyTorch)
+───────────────────────────────────────────────────────────────
+
+  cd "c:\Users\azureuser\Downloads\CDSS Project"
+  .venv\Scripts\activate
+  uvicorn api:app --host 0.0.0.0 --port 8000
+
+  → Wait ~60 seconds for all 3 AI models to load (~2.8 GB)
+  → You'll see: [STARTUP] All models ready in XXs
+  → Backend runs at: http://localhost:8000
+  → Swagger docs:    http://localhost:8000/docs
+
+───────────────────────────────────────────────────────────────
+  TERMINAL 2 — Frontend (React + Vite)
+───────────────────────────────────────────────────────────────
+
+  cd "c:\Users\azureuser\Downloads\CDSS Project\frontend"
+  npm run dev
+
+  → Frontend runs at: http://localhost:8501
+  → Open this URL in your browser
+
+───────────────────────────────────────────────────────────────
+  NOTES
+───────────────────────────────────────────────────────────────
+
+  • Vite is configured with strictPort: true on port 8501
+    (set in frontend/vite.config.js).
+
+  • The frontend will show a loading banner until the backend
+    models are fully loaded. Wait for it to disappear.
+
+  • The frontend .env has:
+      VITE_API_BASE_URL=http://127.0.0.1:8000
+
+  • The backend .env has:
+      FOUNDRY_API_KEY=<your Azure AI key>
+      FOUNDRY_ENDPOINT=<your Azure AI endpoint>
+      ALLOWED_ORIGINS=http://localhost:5173,...,http://localhost:8501
+
+═══════════════════════════════════════════════════════════════

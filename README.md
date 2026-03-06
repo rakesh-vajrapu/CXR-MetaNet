@@ -250,7 +250,7 @@ CDSS follows a **decoupled edge-cloud architecture** optimized for clinical envi
 │   FastAPI + Uvicorn  ←──  Deployed on Azure / Docker Host         │
 │   - PyTorch inference (CPU-optimized)                             │
 │   - GradCAM++ heatmap generation                                  │
-│   - Image validation (4-gate pipeline)                            │
+│   - Image validation (6-gate pipeline)                            │
 │   - CORS restricted to allowed origins                            │
 │                                                                  │
 │   Env vars: FOUNDRY_API_KEY, FOUNDRY_ENDPOINT, ALLOWED_ORIGINS    │

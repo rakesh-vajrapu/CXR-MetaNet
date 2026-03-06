@@ -1881,16 +1881,7 @@ export default function App() {
                     const accGlow = isNormal ? 'rgba(16,185,129,0.25)' : isPleural ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.25)';
                     const gradFrom = isNormal ? '#10B981' : isPleural ? '#F59E0B' : '#EF4444';
                     const gradTo = isNormal ? '#059669' : isPleural ? '#D97706' : '#DC2626';
-                    // Real SVG for Lungs since Unicode 🫁 (Unicode 13.0) renders as a missing box on many Windows machines
-                    const lungSvg = (
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                        <path d="M12 22S7.5 19.5 7.5 13.5V6L12 3l4.5 3v7.5C16.5 19.5 12 22 12 22z" />
-                        <path d="M12 3v19" strokeDasharray="2 2" />
-                        <path d="M7.5 10h9" opacity="0.4" />
-                        <path d="M7.5 14h9" opacity="0.4" />
-                      </svg>
-                    );
-                    const icon = isNormal ? lungSvg : isPleural ? '💧' : '🦠';
+                    const icon = isNormal ? '🫁' : isPleural ? '💧' : '🦠';
                     const pct = Math.round(results.confidence_score * 100);
                     // SVG ring params
                     const r = 44, circ = 2 * Math.PI * r;
@@ -1920,7 +1911,7 @@ export default function App() {
                           <div className="flex-1 min-w-0">
                             {/* Icon + Label */}
                             <div className="flex items-center gap-3 mb-3">
-                              <span className="text-4xl animate-gentle-wiggle inline-block">{icon}</span>
+                              <div className={`animate-gentle-wiggle inline-flex items-center justify-center ${typeof icon === 'string' ? 'text-4xl' : ''}`} style={{ width: 40, height: 40 }}>{icon}</div>
                               <span className={`text-xs font-bold uppercase tracking-[0.18em] px-3 py-1 rounded-full border`}
                                 style={{ color: accColor, borderColor: `${accColor}44`, background: `${accColor}11` }}>
                                 AI Clinical Diagnosis
