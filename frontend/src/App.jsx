@@ -199,10 +199,22 @@ const GuidedTour = memo(({ active, step, onNext, onPrev, onSkip, theme, status }
         setSpotlightRect({ top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 });
 
         const pos = currentStep.position;
-        const tooltipW = 380;
+        const isMobile = window.innerWidth < 640;
+        const tooltipW = isMobile ? Math.min(380, window.innerWidth - 32) : 380;
         const maxTop = window.innerHeight - 400;
         let t = {}, arrowSide = '';
-        if (pos === 'right') {
+
+        if (isMobile) {
+          // On mobile, always center horizontally and position below or above the target
+          const centerLeft = Math.max(16, (window.innerWidth - tooltipW) / 2);
+          if (rect.bottom + 20 < maxTop) {
+            t = { top: rect.bottom + 20, left: centerLeft };
+            arrowSide = 'top';
+          } else {
+            t = { top: Math.max(16, rect.top - 320), left: centerLeft };
+            arrowSide = 'bottom';
+          }
+        } else if (pos === 'right') {
           t = { top: Math.max(16, Math.min(rect.top, maxTop)), left: Math.min(rect.right + 20, window.innerWidth - tooltipW - 16) };
           arrowSide = 'left';
         } else if (pos === 'left') {
@@ -259,18 +271,19 @@ const GuidedTour = memo(({ active, step, onNext, onPrev, onSkip, theme, status }
 
       {/* Tooltip */}
       <div key={step} className={`tour-tooltip ${isAnimating ? 'tour-tooltip-entering' : ''}`}
+        data-mobile-tour
         style={isCenter
           ? { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
           : { top: tooltipPos.top, left: tooltipPos.left }
         }
       >
-        <div className={`relative ${theme === 'dark' ? 'bg-[#0d1520]/95 backdrop-blur-xl border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.6)]' : 'bg-white/95 backdrop-blur-xl border border-gray-200 shadow-[0_25px_60px_rgba(0,0,0,0.15)]'} rounded-2xl overflow-hidden`}>
+        <div className={`relative w-[min(380px,calc(100vw-32px))] ${theme === 'dark' ? 'bg-[#0d1520]/95 backdrop-blur-xl border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.6)]' : 'bg-white/95 backdrop-blur-xl border border-gray-200 shadow-[0_25px_60px_rgba(0,0,0,0.15)]'} rounded-2xl overflow-hidden`}>
 
           {/* Animated gradient top strip */}
           <div className="tour-gradient-strip" />
 
           {/* Header */}
-          <div className={`px-6 pt-5 pb-3 ${theme === 'dark' ? 'bg-gradient-to-r from-[#00D4FF]/5 via-transparent to-[#8B5CF6]/5' : 'bg-gradient-to-r from-blue-50/80 via-transparent to-violet-50/80'}`}>
+          <div className={`px-4 sm:px-6 pt-4 sm:pt-5 pb-2 sm:pb-3 ${theme === 'dark' ? 'bg-gradient-to-r from-[#00D4FF]/5 via-transparent to-[#8B5CF6]/5' : 'bg-gradient-to-r from-blue-50/80 via-transparent to-violet-50/80'}`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2.5">
                 <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-[11px] font-black ${theme === 'dark' ? 'bg-[#00D4FF]/15 text-[#00D4FF] ring-1 ring-[#00D4FF]/20' : 'bg-blue-100 text-blue-700 ring-1 ring-blue-200'}`}>
@@ -284,14 +297,14 @@ const GuidedTour = memo(({ active, step, onNext, onPrev, onSkip, theme, status }
                 ✕
               </button>
             </div>
-            <h3 className={`text-[19px] font-extrabold tracking-tight leading-snug ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <h3 className={`text-[16px] sm:text-[19px] font-extrabold tracking-tight leading-snug ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               {currentStep.title}
             </h3>
           </div>
 
           {/* Body */}
-          <div className="px-6 py-4">
-            <p className={`text-[14px] leading-[1.8] ${theme === 'dark' ? 'text-white/65' : 'text-gray-600'}`}>
+          <div className="px-4 sm:px-6 py-3 sm:py-4">
+            <p className={`text-[13px] sm:text-[14px] leading-[1.6] sm:leading-[1.8] ${theme === 'dark' ? 'text-white/65' : 'text-gray-600'}`}>
               {currentStep.desc}
             </p>
             {isActionStep && (
@@ -309,7 +322,7 @@ const GuidedTour = memo(({ active, step, onNext, onPrev, onSkip, theme, status }
           </div>
 
           {/* Footer — Progress bar + Buttons */}
-          <div className={`px-6 pb-5 pt-3 ${theme === 'dark' ? 'border-t border-white/5' : 'border-t border-gray-100'}`}>
+          <div className={`px-4 sm:px-6 pb-4 sm:pb-5 pt-2 sm:pt-3 ${theme === 'dark' ? 'border-t border-white/5' : 'border-t border-gray-100'}`}>
             {/* Progress bar */}
             <div className={`w-full h-1 rounded-full overflow-hidden mb-4 ${theme === 'dark' ? 'bg-white/8' : 'bg-gray-100'}`}>
               <div className="h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #00D4FF, #8B5CF6, #FF0080)' }} />
