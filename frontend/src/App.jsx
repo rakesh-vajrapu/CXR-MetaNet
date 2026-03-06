@@ -1232,29 +1232,37 @@ export default function App() {
             </div>
           </div>
 
-          {/* ═══ Mobile Hamburger Menu (visible below sm) ═══ */}
-          <div className="relative sm:hidden z-20">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setMobileMenuOpen(p => !p)}
-              className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-300 cursor-pointer
-                ${theme === 'dark'
-                  ? 'bg-white/5 border-white/15 text-white/80 hover:border-[#00D4FF]/50'
-                  : 'bg-white border-indigo-200 text-indigo-600 hover:border-indigo-400 shadow-sm'}`}
-              aria-label="Menu"
-            >
-              <span className="text-lg">{mobileMenuOpen ? '✕' : '☰'}</span>
-            </motion.button>
+          {/* ═══ Mobile Hamburger Menu Button (visible below sm) ═══ */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setMobileMenuOpen(p => !p)}
+            className={`absolute top-3 right-3 sm:hidden z-30 flex items-center justify-center w-10 h-10 rounded-xl border transition-all duration-300 cursor-pointer
+              ${theme === 'dark'
+                ? 'bg-white/5 border-white/15 text-white/80 hover:border-[#00D4FF]/50'
+                : 'bg-white border-indigo-200 text-indigo-600 hover:border-indigo-400 shadow-sm'}`}
+            aria-label="Menu"
+          >
+            <span className="text-lg">{mobileMenuOpen ? '✕' : '☰'}</span>
+          </motion.button>
 
-            {/* Dropdown panel */}
-            <AnimatePresence>
-              {mobileMenuOpen && (
+          {/* ═══ Mobile Dropdown Panel (fixed overlay, visible below sm) ═══ */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <>
+                {/* Backdrop to close on tap-outside */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="fixed inset-0 z-[9998] sm:hidden"
+                />
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className={`absolute right-0 top-12 w-48 rounded-2xl border p-2 flex flex-col gap-1.5 shadow-xl
+                  className={`fixed top-16 right-4 z-[9999] w-48 rounded-2xl border p-2 flex flex-col gap-1.5 shadow-2xl sm:hidden
                     ${theme === 'dark'
                       ? 'bg-[#0d1520]/95 backdrop-blur-xl border-white/10'
                       : 'bg-white/95 backdrop-blur-xl border-indigo-100'}`}
@@ -1281,9 +1289,9 @@ export default function App() {
                     <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                   </button>
                 </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+              </>
+            )}
+          </AnimatePresence>
 
           {/* ═══ Desktop Buttons (hidden below sm, visible sm+) ═══ */}
           {/* Take a Tour Button */}
