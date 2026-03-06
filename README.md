@@ -323,7 +323,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173
 ```bash
 uvicorn api:app --host 0.0.0.0 --port 8000
 ```
-> ⏳ First startup takes ~60 seconds to load all 3 models (~2.8 GB total) into memory.
+> ⏳ Models are loaded in a **background thread** — the server responds to health checks immediately, but inference will be unavailable for ~60 seconds while the 3 models (~2.8 GB total) finish loading.
 
 ### 5. Frontend Setup
 ```bash
@@ -342,23 +342,24 @@ npm run dev
 ```
 
 ### 7. Open in Browser
-Navigate to **http://localhost:5173** — the CDSS UI will appear. Wait for the model loading banner to disappear before uploading X-rays.
+Navigate to **http://localhost:8501** — the CDSS UI will appear. Wait for the model loading banner to disappear before uploading X-rays.
 
 ### Continuous Deployment (GitHub Actions)
 The backend is fully automated via CI/CD. When you push to the `main` branch, a GitHub Action automatically triggers:
 1. Provisions an Ubuntu runner
-2. Downloads the 847MB `images.zip` dataset directly from **Azure Blob Storage** (bypassing Git LFS limitations)
-3. Extracts the images into the repository space
-4. Builds the Docker container natively
-5. Pushes to **Azure Container Registry (ACR)**
-6. Restarts the Azure App Service with the new image
+2. Downloads all **model weights** (~2.8 GB) from **Azure Blob Storage** (no Git LFS dependency)
+3. Downloads the `images.zip` dataset from **Azure Blob Storage**
+4. Extracts the images into the repository space
+5. Builds the Docker container natively
+6. Pushes to **Azure Container Registry (ACR)**
+7. Restarts the Azure App Service with the new image
 
 *Required GitHub repository secrets for this pipeline:*
 - `REGISTRY_USERNAME` (ACR login)
 - `REGISTRY_PASSWORD` (ACR password)
 - `AZURE_WEBAPP_PUBLISH_PROFILE` (XML profile from Azure App Service)
 
-> **Note on "Always On"**: For zero-wait inference, ensure "Always On" is enabled under *Configuration > General settings* in your Azure App Service. Otherwise, the container scales down after 20 minutes of inactivity, causing a 30-second "Cold Start" model loading delay for the next user.
+> **Note on "Always On"**: For zero-wait inference, ensure "Always On" is enabled under *Configuration > General settings* in your Azure App Service. Otherwise, the container scales down after 20 minutes of inactivity, causing a cold-start model loading delay for the next user.
 
 ---
 
