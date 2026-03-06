@@ -344,13 +344,20 @@ npm run dev
 ### 7. Open in Browser
 Navigate to **http://localhost:5173** — the CDSS UI will appear. Wait for the model loading banner to disappear before uploading X-rays.
 
-### Docker Deployment (Azure App Service)
-We use the Azure CLI to build and push the container directly to Azure Container Registry (ACR), injecting the massive dataset images into the Docker image locally to bypass Git LFS limits:
+### Continuous Deployment (GitHub Actions)
+The backend is fully automated via CI/CD. When you push to the `main` branch, a GitHub Action automatically triggers:
+1. Provisions an Ubuntu runner
+2. Downloads the 847MB `images.zip` dataset directly from **Azure Blob Storage** (bypassing Git LFS limitations)
+3. Extracts the images into the repository space
+4. Builds the Docker container natively
+5. Pushes to **Azure Container Registry (ACR)**
+6. Restarts the Azure App Service with the new image
 
-```bash
-# Build the Docker image locally and push directly to Azure Container Registry
-az acr build --registry CXRMetaNet --image cxr-metanet-api:latest .
-```
+*Required GitHub repository secrets for this pipeline:*
+- `REGISTRY_USERNAME` (ACR login)
+- `REGISTRY_PASSWORD` (ACR password)
+- `AZURE_WEBAPP_PUBLISH_PROFILE` (XML profile from Azure App Service)
+
 > **Note on "Always On"**: For zero-wait inference, ensure "Always On" is enabled under *Configuration > General settings* in your Azure App Service. Otherwise, the container scales down after 20 minutes of inactivity, causing a 30-second "Cold Start" model loading delay for the next user.
 
 ---
