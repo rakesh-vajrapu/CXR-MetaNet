@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          lfs: false # We are bypassing LFS for the massive dataset
+          lfs: true # Needed for PyTorch model weights (*.pth, *.pkl)
 
       - name: Download Dataset from Azure Blob Storage
         run: |
