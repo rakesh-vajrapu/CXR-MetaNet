@@ -4,15 +4,16 @@ __pycache__/
 *.pyc
 *.pyo
 
-# ─── Dataset images (large, not needed at runtime) ───
+# ─── Dataset zip (not needed, images/ is copied separately) ───
 Dataset/images.zip
 
-# ─── Frontend (deployed separately) ───
+# ─── Frontend (deployed separately on Vercel) ───
 frontend/
 
 # ─── Git & IDE ───
 .git/
 .gitignore
+.gitattributes
 .vscode/
 
 # ─── Documentation & Assets ───
@@ -27,3 +28,6 @@ Assets/
 Dockerfile
 .dockerignore
 docker-compose*.yml
+
+# ─── Scripts not needed in container ───
+setup_dataset.py

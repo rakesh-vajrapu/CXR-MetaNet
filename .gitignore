@@ -9,5 +9,6 @@ frontend/dist/
 .env
 frontend/.env
 
-# ─── Dataset images (stored as images.zip via Git LFS) ───
+# ─── Dataset images (too large for Git, built locally into Docker) ───
 Dataset/images/
+Dataset/images.zip

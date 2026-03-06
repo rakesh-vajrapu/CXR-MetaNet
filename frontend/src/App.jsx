@@ -1195,7 +1195,7 @@ export default function App() {
           initial={{ y: -40, opacity: 0, scale: 0.98 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, type: 'spring', stiffness: 200, damping: 20 }}
-          className={`relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-5 overflow-hidden
+          className={`relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-5
             ${theme === 'dark'
               ? 'bg-gradient-to-br from-[#0d1520] via-[#111827] to-[#0d1520] border border-white/10 shadow-[0_0_40px_rgba(0,212,255,0.08)]'
               : 'bg-gradient-to-br from-[#F4F6FC] to-[#EEF0FA] border border-indigo-100 shadow-lg shadow-indigo-50/60'}`}
