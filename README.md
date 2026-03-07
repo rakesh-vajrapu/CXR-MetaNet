@@ -83,6 +83,7 @@ CDSS is an **AI-powered Clinical Decision Support System** that performs automat
 | **PyTorch 2.2+** | Deep learning inference engine |
 | **timm** | Pre-trained model zoo (DenseNet, ConvNeXt, MaxViT) |
 | **pytorch-grad-cam** | GradCAM++ heatmap generation |
+| **matplotlib** | Heatmap colorbar rendering with intensity scale |
 | **scikit-learn (joblib)** | Meta-learner serialization |
 | **Pillow + SciPy** | Image processing & validation gates |
 | **Pandas** | Ground truth dataset management |
@@ -131,8 +132,8 @@ CDSS Project/
     ├── package.json              # Node.js dependencies
     └── src/
         ├── main.jsx              # React root with ErrorBoundary
-        ├── App.jsx               # Full application (2,849 lines)
-        └── index.css             # Design system & animations (2,056 lines)
+        ├── App.jsx               # Full application (~3,030 lines)
+        └── index.css             # Design system & animations (~2,060 lines)
 ```
 
 ---
@@ -183,9 +184,10 @@ CDSS employs a **stacking ensemble** of three diverse architectures, each bringi
 - **Input Resolution**: 512×512 pixels
 - **Augmentation**: Test-Time Augmentation (TTA) applied during validation
 - **Ensemble Strategy**: L2-regularized Logistic Regression Meta-Learner trained on held-out TTA probabilities
-- **GradCAM++ Extraction**: Applied to DenseNet-121's final feature layer to generate visual attention heatmaps
+- **GradCAM++ Extraction**: Applied to DenseNet-121's final feature layer to generate visual attention heatmaps with a vertical **intensity colorbar** (0.0–1.0 scale, jet colormap) rendered via matplotlib
+- **Normal Case Explainability**: An expandable UI panel explains why the AI generates heatmaps even for Normal diagnoses (AI attention verification, uncertainty detection, audit trail)
 
-### Image Validation Pipeline (4 Gates)
+### Image Validation Pipeline (6 Gates)
 Before inference, every uploaded image passes through a multi-gate validation system:
 
 | Gate | Check | Threshold | Rejects |
@@ -194,6 +196,8 @@ Before inference, every uploaded image passes through a multi-gate validation sy
 | 2 | HSV saturation ratio | > 8% | Colorful non-medical images |
 | 3 | Intensity std deviation | < 15.0 | Blank / flat images |
 | 4 | Sobel edge density | < 2% or > 60% | Text documents, smooth photos |
+| 5 | Edge orientation analysis | H/V ratio > 75% | Screenshots, typed text documents |
+| 6 | Histogram bin concentration | Top-2 bins > 70% | Single-tone images, scanned docs |
 
 ---
 
@@ -271,7 +275,7 @@ CDSS follows a **decoupled edge-cloud architecture** optimized for clinical envi
 
 | Component | Local Dev | Production |
 |-----------|-----------|------------|
-| **Frontend** | `npm run dev` (Vite, port 5173) | Vercel / Netlify / Azure Static Web Apps |
+| **Frontend** | `npm run dev` (Vite, port 8501) | Vercel / Netlify / Azure Static Web Apps |
 | **Backend** | `uvicorn api:app` (port 8000) | Docker → Azure Container Apps / AWS ECS |
 | **AI/LLM** | Azure AI Foundry (same) | Azure AI Foundry (same) |
 
@@ -291,7 +295,7 @@ cd CXR-MetaNet
 ```
 
 ### 1b. Extract Dataset Images
-The dataset images are stored as a compressed archive via Git LFS. Run:
+The dataset images are stored as a compressed archive. Run:
 ```bash
 python setup_dataset.py
 ```

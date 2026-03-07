@@ -295,7 +295,14 @@ def preprocess_image(image_rgb):
 
 
 def generate_heatmap(input_tensor, image_resized, pred_idx):
-    """Create a fresh GradCAM++ instance per call to prevent stale hook state."""
+    """Create a fresh GradCAM++ instance per call to prevent stale hook state.
+    Returns a base64 PNG with a vertical intensity colorbar on the right."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
     target_layers = [densenet_model.features[-1]]
     cam_instance = GradCAMPlusPlus(model=densenet_model, target_layers=target_layers)
     targets = [ClassifierOutputTarget(pred_idx)]
@@ -306,9 +313,33 @@ def generate_heatmap(input_tensor, image_resized, pred_idx):
     img_np = np.array(image_resized).astype(np.float32) / 255.0
     visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
 
-    img_pil = Image.fromarray(visualization)
+    # Build figure with vertical colorbar using matplotlib
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5.5), dpi=150)
+    fig.patch.set_facecolor("#0d1117")
+
+    ax.imshow(visualization)
+    ax.set_axis_off()
+
+    # Overlay the raw GradCAM as an invisible mappable for the colorbar
+    norm = Normalize(vmin=0.0, vmax=1.0)
+    sm = plt.cm.ScalarMappable(cmap="jet", norm=norm)
+    sm.set_array([])
+
+    # Add vertical colorbar on the right
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.08)
+    cbar = fig.colorbar(sm, cax=cax, orientation="vertical")
+    cbar.set_label("Attention Intensity", color="white", fontsize=9, labelpad=8)
+    cbar.set_ticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    cbar.ax.tick_params(colors="white", labelsize=8)
+    cbar.outline.set_edgecolor((1, 1, 1, 0.3))
+
+    plt.subplots_adjust(left=0.02, right=0.88, top=0.98, bottom=0.02)
+
     buffered = io.BytesIO()
-    img_pil.save(buffered, format="PNG")
+    fig.savefig(buffered, format="PNG", facecolor=fig.get_facecolor(),
+                bbox_inches="tight", pad_inches=0.1)
+    plt.close(fig)
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 

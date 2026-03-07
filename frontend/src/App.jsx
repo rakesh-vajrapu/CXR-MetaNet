@@ -592,6 +592,7 @@ export default function App() {
   // Show scroll hint
   const [showScrollHint, setShowScrollHint] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showNormalHeatmapExplain, setShowNormalHeatmapExplain] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(null);
 
   // Initial user scroll tracker to hide hint
@@ -1995,7 +1996,7 @@ export default function App() {
                   })()}
 
                   {/* 2 Col Viz (Images Side By Side) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full mb-6 items-start">
                     {/* ═══ ORIGINAL SCAN CARD ═══ */}
                     <motion.div
                       initial={{ opacity: 0, x: -15, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 22 }}
@@ -2144,6 +2145,90 @@ export default function App() {
                         </div>
                       </div>
                     </motion.div>
+
+                    {/* ═══ HEATMAP DISCLAIMER (all cases) ═══ */}
+                    {results.heatmap_base64 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.4 }}
+                        className={`flex items-center gap-2 mt-2 px-3 py-2 rounded-xl border backdrop-blur-sm ${theme === 'dark'
+                          ? 'bg-amber-500/5 border-amber-500/15'
+                          : 'bg-amber-50 border-amber-200/50'}`}
+                      >
+                        <span className="text-xs animate-pulse">{'\u{1F4A1}'}</span>
+                        <p className={`text-[11px] leading-snug ${theme === 'dark' ? 'text-amber-200/70' : 'text-amber-700'}`}>
+                          This heatmap shows <strong>where the AI paid attention</strong> to make its decision &mdash; <strong>not</strong> where the disease is.
+                        </p>
+                      </motion.div>
+                    )}
+
+                    {/* ═══ WHY HEATMAP FOR NORMAL? ═══ */}
+                    {results.prediction?.toLowerCase() === 'normal' && results.heatmap_base64 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6, duration: 0.4, type: 'spring', stiffness: 120 }}
+                        className="mt-2"
+                      >
+                        <button
+                          onClick={() => setShowNormalHeatmapExplain(!showNormalHeatmapExplain)}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl border transition-all duration-300 group relative overflow-hidden
+                            ${theme === 'dark'
+                              ? 'bg-[#0d1520]/80 border-emerald-500/20 hover:border-emerald-400/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.12)]'
+                              : 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-300 hover:shadow-lg'}`}
+                        >
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                            style={{ background: theme === 'dark' ? 'linear-gradient(90deg, transparent, rgba(16,185,129,0.05), transparent)' : 'linear-gradient(90deg, transparent, rgba(16,185,129,0.08), transparent)', backgroundSize: '200% 100%', animation: 'shimmer-fast 2s linear infinite' }} />
+                          <span className="text-base relative z-10">{'\u{1F914}'}</span>
+                          <span className={`text-[12px] font-semibold flex-1 text-left relative z-10 ${theme === 'dark' ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                            Why heatmap for a Normal case?
+                          </span>
+                          <motion.span
+                            animate={{ rotate: showNormalHeatmapExplain ? 180 : 0 }}
+                            transition={{ duration: 0.3, type: 'spring', stiffness: 200 }}
+                            className={`text-xs relative z-10 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}
+                          >
+                            {'\u25BC'}
+                          </motion.span>
+                        </button>
+                        <AnimatePresence>
+                          {showNormalHeatmapExplain && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0, scale: 0.98 }}
+                              animate={{ height: 'auto', opacity: 1, scale: 1 }}
+                              exit={{ height: 0, opacity: 0, scale: 0.98 }}
+                              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                              className="overflow-hidden"
+                            >
+                              <div className={`mt-1.5 p-4 rounded-xl border space-y-2.5 ${theme === 'dark'
+                                ? 'bg-[#0d1520] border-white/6'
+                                : 'bg-white border-gray-100'}`}>
+                                {[
+                                  { icon: '\u{1F50D}', title: 'Verifies AI Focus', desc: 'Confirms that the AI examined the correct lung areas to reach its Normal conclusion, not random edges or artifacts.' },
+                                  { icon: '\u26A0\uFE0F', title: 'Catches Hidden Uncertainty', desc: 'If certain areas glow warm (0.4\u20130.6), the AI may be slightly unsure, prompting a radiologist to double-check.' },
+                                  { icon: '\u{1F4CB}', title: 'Complete Audit Trail', desc: 'Every scan gets a visual record of the AI\u2019s reasoning, supporting transparent and evidence-based diagnostics.' },
+                                ].map((item, i) => (
+                                  <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.12, duration: 0.3 }}
+                                    className={`flex gap-3 p-2.5 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}
+                                  >
+                                    <span className="text-base mt-0.5">{item.icon}</span>
+                                    <div>
+                                      <p className={`text-[13px] font-bold ${theme === 'dark' ? 'text-white/90' : 'text-gray-800'}`}>{item.title}</p>
+                                      <p className={`text-[12px] leading-relaxed mt-0.5 ${theme === 'dark' ? 'text-white/50' : 'text-gray-500'}`}>{item.desc}</p>
+                                    </div>
+                                  </motion.div>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    )}
 
                   </div>
 
