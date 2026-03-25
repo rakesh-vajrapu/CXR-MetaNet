@@ -424,6 +424,7 @@ export default function App() {
   const [availableVoices, setAvailableVoices] = useState([]);
 
   const messagesEndRef = useRef(null);
+  const chatScrollRef = useRef(null);
   const recognitionRef = useRef(null);
   const chatInputRef = useRef(null);
 
@@ -561,7 +562,10 @@ export default function App() {
   }, []);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll within the chat messages container only — never scroll the page
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -1202,7 +1206,7 @@ export default function App() {
         )}
       </AnimatePresence >
 
-      <div className={`app-container max-w-5xl 2xl:max-w-7xl mx-auto space-y-2 sm:space-y-3 relative z-10 w-full transition-opacity duration-500 ${!modelsReady ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+      <div className={`app-container max-w-6xl 2xl:max-w-7xl mx-auto space-y-2 sm:space-y-3 relative z-10 w-full transition-opacity duration-500 ${!modelsReady ? 'opacity-40 pointer-events-none select-none' : ''}`}>
 
         {/* ═══ PREMIUM HEADER ═══ */}
         <motion.div
@@ -2748,7 +2752,7 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 custom-scrollbar pb-6 flex flex-col items-start w-full">
+                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 custom-scrollbar pb-6 flex flex-col items-start w-full">
                       {chatMessages.length === 0 && isChatting && (
                         <div className="flex h-full w-full items-center justify-center opacity-50 text-sm animate-pulse flex-col gap-3">
                           <Activity size={24} className="animate-bounce text-[#00D4FF]" />
