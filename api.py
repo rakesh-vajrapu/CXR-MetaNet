@@ -36,7 +36,15 @@ from pytorch_grad_cam.utils.image import show_cam_on_image
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 import contextlib
 import warnings
+import re
 import multiprocessing
+from scipy import ndimage
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import pandas as pd
 
@@ -49,6 +57,24 @@ try:
 except Exception as e:
     print(f"Warning: Could not load data.csv for ground truths. {e}")
     ground_truth_dict = {}
+
+# ─── PERSISTENT HTTP CLIENT (avoids TCP+TLS handshake per request) ───
+_http_client = httpx.AsyncClient(
+    timeout=30.0,
+    limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+)
+
+# ─── PRE-COMPILED MEDICAL TERM PATTERNS (avoid recompiling 18 regex per chat call) ───
+MEDICAL_TERMS = [
+    "pleural effusion", "pneumonia", "tuberculosis", "cardiomegaly",
+    "atelectasis", "consolidation", "pulmonary edema", "lung opacity",
+    "pneumothorax", "emphysema", "fibrosis", "bronchitis", "edema",
+    "effusion", "infiltration", "mass", "nodule", "hernia",
+]
+_MEDICAL_TERM_PATTERNS = [
+    (re.compile(re.escape(term), re.IGNORECASE), term.title())
+    for term in MEDICAL_TERMS
+]
 
 
 app = FastAPI(title="CDSS API")
@@ -197,7 +223,6 @@ def validate_radiograph_modality(image_bytes):
 
     # ── GATE 2: Saturation check (HSV colorfulness) ──
     # Real X-rays are nearly zero saturation; photos of objects have regions of color
-    from PIL import ImageStat
     hsv_img = img_pil.convert("HSV")
     hsv_arr = np.array(hsv_img)
     saturation = hsv_arr[:, :, 1].astype(np.float32)
@@ -221,7 +246,6 @@ def validate_radiograph_modality(image_bytes):
     # ── GATE 4: Edge density check ──
     # X-rays have moderate edge density from anatomical structures;
     # blank images, text docs, or very smooth photos will fail this
-    from scipy import ndimage
     gray_small = np.array(img_pil.resize((256, 256)).convert("L"), dtype=np.float32)
     edges = ndimage.sobel(gray_small)
     edge_density = np.mean(edges > 20)  # fraction of strong edge pixels
@@ -267,16 +291,25 @@ def validate_radiograph_modality(image_bytes):
 
 
 
-def preprocess_image(image_rgb):
-    try:
-        resample_filter = (
-            Image.Resampling.BICUBIC if hasattr(Image, "Resampling") else Image.BICUBIC
-        )
-    except AttributeError:
-        resample_filter = Image.BICUBIC
+# ─── PRE-BUILT CONSTANTS (avoid recreating per inference call) ───
+try:
+    _RESAMPLE_FILTER = (
+        Image.Resampling.BICUBIC if hasattr(Image, "Resampling") else Image.BICUBIC
+    )
+except AttributeError:
+    _RESAMPLE_FILTER = Image.BICUBIC
 
+_INFERENCE_TRANSFORM = transforms.Compose(
+    [
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
+
+
+def preprocess_image(image_rgb):
     img_pil = Image.fromarray(image_rgb)
-    img_resized = img_pil.resize((512, 512), resample_filter)
+    img_resized = img_pil.resize((512, 512), _RESAMPLE_FILTER)
 
     # Strictly enforce processing as a 512x512 PNG format before tensors
     buffered = io.BytesIO()
@@ -284,24 +317,13 @@ def preprocess_image(image_rgb):
     buffered.seek(0)
     final_png_512 = Image.open(buffered).convert("RGB")
 
-    transform = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-    tensor = transform(final_png_512).unsqueeze(0).to(device)
+    tensor = _INFERENCE_TRANSFORM(final_png_512).unsqueeze(0).to(device)
     return tensor, final_png_512
 
 
 def generate_heatmap(input_tensor, image_resized, pred_idx):
     """Create a fresh GradCAM++ instance per call to prevent stale hook state.
     Returns a base64 PNG with a vertical intensity colorbar on the right."""
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import Normalize
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
 
     target_layers = [densenet_model.features[-1]]
     cam_instance = GradCAMPlusPlus(model=densenet_model, target_layers=target_layers)
@@ -343,21 +365,28 @@ def generate_heatmap(input_tensor, image_resized, pred_idx):
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 
+# ─── CACHED FILE LIST (avoids scanning 20K+ files per /random_image request) ───
+_cached_image_files: list = []
+
+
 @app.get("/random_image")
 async def get_random_image():
+    global _cached_image_files
     images_dir = "Dataset/images"
     if not os.path.exists(images_dir):
         raise HTTPException(
             status_code=404, detail="Dataset images directory not found."
         )
 
-    valid_extensions = (".png", ".jpg", ".jpeg")
-    files = [f for f in os.listdir(images_dir) if f.lower().endswith(valid_extensions)]
+    # Cache file list on first call; avoids re-scanning 20K+ files every request
+    if not _cached_image_files:
+        valid_extensions = (".png", ".jpg", ".jpeg")
+        _cached_image_files = [f for f in os.listdir(images_dir) if f.lower().endswith(valid_extensions)]
 
-    if not files:
+    if not _cached_image_files:
         raise HTTPException(status_code=404, detail="No images found in dataset.")
 
-    random_file = random.choice(files)
+    random_file = random.choice(_cached_image_files)
     file_path = os.path.join(images_dir, random_file)
 
     return FileResponse(
@@ -550,14 +579,13 @@ CRITICAL: You MUST explicitly discuss the "Visual Attention (Heatmap)" data in y
 
     try:
         url = "https://CDSS-Project.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview"
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, json=payload, headers=headers, timeout=60.0
-            )
-            response.raise_for_status()
-            data = response.json()
-            ai_text = data["choices"][0]["message"]["content"]
-            return {"response": ai_text}
+        response = await _http_client.post(
+            url, json=payload, headers=headers
+        )
+        response.raise_for_status()
+        data = response.json()
+        ai_text = data["choices"][0]["message"]["content"]
+        return {"response": ai_text}
     except Exception as e:
         print(f"[ERROR] generate_reports failed: {e}")
         raise HTTPException(
@@ -629,35 +657,23 @@ async def chat_with_agent(request: ChatRequest):
         "model": "gpt-4o-mini",
         "messages": messages_payload,
         "temperature": 0.3,
-        "max_tokens": 250,
+        "max_tokens": 150,
     }
-
-    # Known medical terms for post-processing capitalization
-    MEDICAL_TERMS = [
-        "pleural effusion", "pneumonia", "tuberculosis", "cardiomegaly",
-        "atelectasis", "consolidation", "pulmonary edema", "lung opacity",
-        "pneumothorax", "emphysema", "fibrosis", "bronchitis", "edema",
-        "effusion", "infiltration", "mass", "nodule", "hernia",
-    ]
 
     try:
         url = "https://CDSS-Project.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview"
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, json=payload, headers=headers, timeout=60.0
-            )
-            response.raise_for_status()
-            data = response.json()
-            ai_text = data["choices"][0]["message"]["content"]
+        response = await _http_client.post(
+            url, json=payload, headers=headers
+        )
+        response.raise_for_status()
+        data = response.json()
+        ai_text = data["choices"][0]["message"]["content"]
 
-            # Post-process: force-capitalize medical terms
-            import re
-            for term in MEDICAL_TERMS:
-                pattern = re.compile(re.escape(term), re.IGNORECASE)
-                title = term.title()
-                ai_text = pattern.sub(title, ai_text)
+        # Post-process: force-capitalize medical terms (pre-compiled patterns)
+        for pattern, replacement in _MEDICAL_TERM_PATTERNS:
+            ai_text = pattern.sub(replacement, ai_text)
 
-            return {"response": ai_text}
+        return {"response": ai_text}
     except Exception as e:
         print(f"[ERROR] chat endpoint failed: {e}")
         raise HTTPException(

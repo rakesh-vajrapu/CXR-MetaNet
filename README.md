@@ -374,7 +374,20 @@ To maximize inference speed without crashing the host OS or freezing the browser
 - **Production (Azure App Service)**: Detects the `WEBSITE_SITE_NAME` environment variable and allocates **90% of available CPU cores** (e.g., 3 threads on a 4-core machine) to maximize inference throughput.
 - **Local Dev (VM / Laptop)**: Allocates **75% of available CPU cores** to leave generous headroom for the developer's Web Browser, IDE, and OS.
 
-### 2. Strict AI Medical Scope Restriction
+### 2. Persistent HTTP Client & Connection Pooling
+All Azure OpenAI API calls (chat + report generation) use a **shared `httpx.AsyncClient`** with keepalive connection pooling, eliminating per-request TCP/TLS handshake overhead (~200–500ms savings per call).
+
+### 3. Pre-Compiled Regex & Module-Level Imports
+- **Medical term capitalization patterns** (18 regex) are pre-compiled at module load, avoiding recompilation on every chat response.
+- All heavy imports (`scipy.ndimage`, `matplotlib`, `pytorch-grad-cam`) are loaded once at startup instead of on every function call.
+
+### 4. Inference Pipeline Constants
+- **`transforms.Compose`** (ImageNet normalization pipeline) and **`Image.Resampling.BICUBIC`** are resolved once at module level — not reconstructed per inference call.
+
+### 5. Cached Dataset File Listing
+The `/random_image` endpoint caches the 20,805-file directory listing on first call, eliminating repeated `os.listdir()` scans on every request.
+
+### 6. Strict AI Medical Scope Restriction
 The CDSS Assistant relies on Azure OpenAI's GPT-4o-mini but features a hardcoded **Scope Restriction Guardrail**:
 - The AI is instructed to *strictly* refuse answering questions unrelated to chest X-rays, clinical diagnoses, respiratory conditions, or the CDSS application itself.
 - Off-topic queries (e.g., about general tech companies, politics, or coding) trigger a polite, guiding refusal, ensuring the assistant remains a dedicated clinical tool.
